@@ -65,7 +65,7 @@ class TutorProfile extends Model
 
         public function availabilities(): HasMany
     {
-        return $this->hasMany(TutorAvailability::class);
+        return $this->hasMany(TutorAvailability::class, 'tutor_id', 'user_id');
     }
 
         public function bookings(): HasMany

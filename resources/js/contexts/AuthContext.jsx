@@ -11,8 +11,13 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchAuthenticatedUser = async () => {
+        const res = await axios.get('/api/v1/auth/me');
+        return res.data?.data?.user ?? null;
+    };
+
     useEffect(() => {
-        const fetchUser = async () => {
+        const bootstrapAuth = async () => {
             const token = localStorage.getItem('learnora_token');
             if (!token) {
                 setLoading(false);
@@ -20,10 +25,9 @@ export const AuthProvider = ({ children }) => {
             }
 
             try {
-                const res = await axios.get('/api/v1/auth/me');
-                setUser(res.data.data.user);
+                const authenticatedUser = await fetchAuthenticatedUser();
+                setUser(authenticatedUser);
             } catch (error) {
-                
                 localStorage.removeItem('learnora_token');
                 setUser(null);
             } finally {
@@ -31,24 +35,34 @@ export const AuthProvider = ({ children }) => {
             }
         };
 
-        fetchUser();
+        bootstrapAuth();
     }, []);
 
     const login = async (email, password) => {
         try {
-            
             await axios.get('/sanctum/csrf-cookie');
 
             const res = await axios.post('/api/v1/auth/login', { email, password });
-            
-            const { user, access_token } = res.data.data;
+            const accessToken = res.data?.data?.access_token;
+            if (!accessToken) {
+                return { success: false, message: 'Login failed. Access token was not returned.' };
+            }
 
-            localStorage.setItem('learnora_token', access_token);
+            localStorage.setItem('learnora_token', accessToken);
 
-            setUser(user);
-            
-            return { success: true, user };
+            const authenticatedUser = await fetchAuthenticatedUser();
+            if (!authenticatedUser) {
+                localStorage.removeItem('learnora_token');
+                setUser(null);
+                return { success: false, message: 'Login failed. Could not load your profile.' };
+            }
+
+            setUser(authenticatedUser);
+
+            return { success: true, user: authenticatedUser };
         } catch (error) {
+            localStorage.removeItem('learnora_token');
+            setUser(null);
             const message = error.response?.data?.message || 'Login failed. Please try again.';
             return { success: false, message };
         }
@@ -65,12 +79,26 @@ export const AuthProvider = ({ children }) => {
                 role
             });
 
-            const { user, access_token } = res.data.data;
-            localStorage.setItem('learnora_token', access_token);
-            setUser(user);
-            
-            return { success: true, user };
+            const accessToken = res.data?.data?.access_token;
+            if (!accessToken) {
+                return { success: false, message: 'Registration failed. Access token was not returned.' };
+            }
+
+            localStorage.setItem('learnora_token', accessToken);
+
+            const authenticatedUser = await fetchAuthenticatedUser();
+            if (!authenticatedUser) {
+                localStorage.removeItem('learnora_token');
+                setUser(null);
+                return { success: false, message: 'Registration failed. Could not load your profile.' };
+            }
+
+            setUser(authenticatedUser);
+
+            return { success: true, user: authenticatedUser };
         } catch (error) {
+            localStorage.removeItem('learnora_token');
+            setUser(null);
             const message = error.response?.data?.message || 'Registration failed. Please try again.';
             return { success: false, message };
         }

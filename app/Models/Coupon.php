@@ -11,8 +11,8 @@ class Coupon extends Model
 {
     use HasFactory;
 
-    const TYPE_PERCENT = 'percent';
-    const TYPE_FIXED   = 'fixed';
+    const TYPE_PERCENTAGE = 'percentage';
+    const TYPE_FIXED      = 'fixed';
 
         protected $fillable = [
         'created_by',
@@ -33,7 +33,7 @@ class Coupon extends Model
             'min_booking_amount' => 'decimal:2',
             'max_uses'           => 'integer',
             'used_count'         => 'integer',
-            'expires_at'         => 'date:Y-m-d',
+            'expires_at'         => 'datetime',
             'is_active'          => 'boolean',
         ];
     }

@@ -15,22 +15,22 @@ class TutorSearchController extends ApiController
             ->where('availability_status', '!=', 'paused')
             ->with(['user:id,name,avatar', 'subjects:id,name,slug,color']);
 
-        if ($request->filled('subject_id') && $request->subject_id !== '') {
-            $query->whereHas('subjects', function ($q) use ($request) {
-                $q->where('subjects.id', $request->subject_id);
-            });
-        }
+        if ($request->filled('subject') || $request->filled('subject_id')) {
+            $subject = $request->input('subject') ?? $request->input('subject_id');
 
-        if ($request->filled('search')) {
+            $query->whereHas('subjects', function ($q) use ($subject) {
+                $q->where('subjects.id', $subject)
+                    ->orWhere('subjects.name', $subject);
+            });
+        } elseif ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('users.name', 'LIKE', "%{$search}%")
-                  ->orWhereHas('tutorProfile', function ($q2) use ($search) {
-                      $q2->where('headline', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('subjects', function ($q3) use ($search) {
-                      $q3->where('name', 'LIKE', "%{$search}%");
-                  });
+                $q->whereHas('user', function ($q1) use ($search) {
+                    $q1->where('users.name', 'LIKE', "%{$search}%");
+                })->orWhere('tutor_profiles.headline', 'LIKE', "%{$search}%")
+                    ->orWhereHas('subjects', function ($q2) use ($search) {
+                        $q2->where('subjects.name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 

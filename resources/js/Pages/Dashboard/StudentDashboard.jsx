@@ -5,11 +5,10 @@ import { Navigate, Link, useNavigate } from 'react-router-dom';
 import ReviewModal from '../../Components/ReviewModal';
 
 export default function StudentDashboard() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isPaying, setIsPaying] = useState(false);
     const [reviewBooking, setReviewBooking] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,48 +28,6 @@ export default function StudentDashboard() {
             fetchBookings();
         }
     }, [user]);
-
-    const handlePayment = async (bookingId) => {
-        setIsPaying(true);
-        try {
-            const res = await axios.post('/api/v1/payments/initiate', { booking_id: bookingId });
-            const checkoutParams = res.data.data.checkout_params;
-
-            if (!window.payhere) {
-                await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://www.payhere.lk/lib/payhere.js';
-                    script.async = true;
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.body.appendChild(script);
-                });
-            }
-
-            window.payhere.onCompleted = function onCompleted(orderId) {
-                console.log("Payment completed. OrderID:" + orderId);
-                alert("Payment successful! Your session is confirmed.");
-                fetchBookings(); 
-            };
-
-            window.payhere.onDismissed = function onDismissed() {
-                console.log("Payment dismissed");
-            };
-
-            window.payhere.onError = function onError(error) {
-                console.error("Payment error:" + error);
-                alert("Payment encountered an error. Please try again.");
-            };
-
-            window.payhere.startPayment(checkoutParams);
-
-        } catch (error) {
-            console.error('Payment initiation failed:', error);
-            alert(error.response?.data?.message || 'Failed to initiate payment.');
-        } finally {
-            setIsPaying(false);
-        }
-    };
 
     if (!user) return <Navigate to="/login" replace />;
     if (user.role !== 'student') return <Navigate to="/dashboard" replace />;
@@ -147,11 +104,10 @@ export default function StudentDashboard() {
                                             <div className="flex items-center space-x-4">
                                                 {booking.payment_status === 'unpaid' && (
                                                     <button
-                                                        onClick={() => handlePayment(booking.id)}
-                                                        disabled={isPaying}
-                                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 transition-colors"
+                                                        onClick={() => navigate('/student/checkout')}
+                                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 transition-colors"
                                                     >
-                                                        {isPaying ? 'Processing...' : 'Pay Now'}
+                                                        Go to Checkout
                                                     </button>
                                                 )}
                                                 {booking.payment_status === 'paid' && booking.status !== 'cancelled' && (

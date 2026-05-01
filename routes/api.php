@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\Admin\AdminController;
 use App\Http\Controllers\Api\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Api\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Api\Admin\AdminSubjectController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SubjectController;
@@ -51,6 +53,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
 
         Route::get('/',        [TutorProfileController::class, 'index'])->name('index');
+        Route::get('/{tutor}/availability', [TutorProfileController::class, 'availability'])->name('availability');
         
         Route::get('/{tutor}', [TutorProfileController::class, 'show'])->name('show');
     });
@@ -80,6 +83,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::post('reviews', [ReviewController::class, 'store'])
             ->name('reviews.store');
+
+        Route::post('checkout/apply-coupon', [CheckoutController::class, 'applyCoupon'])
+            ->name('checkout.apply-coupon');
     });
 
     Route::post('payments/webhook', [PaymentController::class, 'webhook'])
@@ -101,6 +107,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('tutors/{tutor}/verify',             [AdminController::class, 'verifyTutor']);
         Route::patch('tutors/{tutor}/suspend',            [AdminController::class, 'suspendTutor']);
         Route::apiResource('subjects', AdminSubjectController::class);
+        Route::get('coupons',                             [AdminCouponController::class, 'index']);
+        Route::post('coupons',                            [AdminCouponController::class, 'store']);
+        Route::put('coupons/{coupon}',                    [AdminCouponController::class, 'update']);
+        Route::patch('coupons/{coupon}/toggle',           [AdminCouponController::class, 'toggle']);
         Route::get('bookings',                            [AdminController::class, 'bookings']);
         Route::get('payments',                            [AdminController::class, 'payments']);
     });

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Booking;
+use App\Models\Review;
 use App\Models\TutorProfile;
-use App\Models\User;
+use App\Models\TutorAvailability;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -63,7 +66,6 @@ class TutorProfileController extends ApiController
 
         public function show(TutorProfile $tutor): JsonResponse
     {
-        
         if (! $tutor->is_verified || $tutor->availability_status === 'paused') {
             return $this->notFound('Tutor profile not found.');
         }
@@ -71,11 +73,121 @@ class TutorProfileController extends ApiController
         $tutor->load([
             'user:id,name,avatar,bio,email',
             'subjects:id,name,slug,icon,color',
-            'availabilities' => fn ($q) => $q->active()->orderBy('day_of_week'),
         ]);
 
+        $reviews = Review::query()
+            ->where('tutor_id', $tutor->user_id)
+            ->with('student:id,name')
+            ->latest()
+            ->get();
+
+        $availableDays = TutorAvailability::query()
+            ->where('tutor_id', $tutor->user_id)
+            ->where('is_active', true)
+            ->pluck('day_of_week')
+            ->unique()
+            ->values()
+            ->map(fn ($day) => ucfirst((string) $day));
+
         return $this->ok('Tutor profile retrieved successfully.', [
-            'tutor' => $this->formatPublicProfile($tutor, detailed: true),
+            'tutor' => [
+                'id' => $tutor->id,
+                'user' => [
+                    'id' => $tutor->user?->id,
+                    'name' => $tutor->user?->name,
+                    'avatar' => $tutor->user?->avatar,
+                    'bio' => $tutor->user?->bio,
+                    'email' => $tutor->user?->email,
+                ],
+                'tutor_profile' => [
+                    'id' => $tutor->id,
+                    'headline' => $tutor->headline,
+                    'about' => $tutor->about,
+                    'hourly_rate' => $tutor->hourly_rate,
+                    'avg_rating' => $tutor->avg_rating,
+                    'total_reviews' => $tutor->total_reviews,
+                    'experience_years' => $tutor->experience_years,
+                    'teaching_method' => $tutor->teaching_method,
+                    'availability_status' => $tutor->availability_status,
+                    'is_verified' => $tutor->is_verified,
+                    'languages' => $tutor->languages ?? [],
+                    'certifications' => $tutor->certifications ?? [],
+                    'available_days' => $availableDays,
+                ],
+                'subjects' => $tutor->subjects->map(fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'slug' => $s->slug,
+                    'icon' => $s->icon,
+                    'color' => $s->color,
+                ]),
+                'reviews' => $reviews->map(fn ($review) => [
+                    'id' => $review->id,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'created_at' => $review->created_at?->toISOString(),
+                    'reviewer' => [
+                        'id' => $review->student?->id,
+                        'name' => $review->student?->name,
+                    ],
+                ]),
+            ],
+        ]);
+    }
+
+        public function availability(Request $request, TutorProfile $tutor): JsonResponse
+    {
+        if (! $tutor->is_verified || $tutor->availability_status === 'paused') {
+            return $this->notFound('Tutor profile not found.');
+        }
+
+        $validated = $request->validate([
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $requestedDate = Carbon::parse($validated['date']);
+        $dayName = strtolower($requestedDate->format('l'));
+
+        $slots = TutorAvailability::query()
+            ->where('tutor_id', $tutor->user_id)
+            ->active()
+            ->where('day_of_week', $dayName)
+            ->where(function ($q) use ($requestedDate) {
+                $q->whereNull('valid_from')
+                    ->orWhereDate('valid_from', '<=', $requestedDate->toDateString());
+            })
+            ->where(function ($q) use ($requestedDate) {
+                $q->whereNull('valid_until')
+                    ->orWhereDate('valid_until', '>=', $requestedDate->toDateString());
+            })
+            ->orderBy('start_time')
+            ->get();
+
+        $bookedAvailabilityIds = Booking::query()
+            ->where('tutor_id', $tutor->user_id)
+            ->whereDate('session_date', $requestedDate->toDateString())
+            ->whereNotIn('status', [Booking::STATUS_CANCELLED])
+            ->pluck('availability_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $availableSlots = $slots
+            ->reject(fn ($slot) => $bookedAvailabilityIds->contains($slot->id))
+            ->values()
+            ->map(fn ($slot) => [
+                'availability_id' => $slot->id,
+                'day_of_week' => $slot->day_of_week,
+                'start_time' => $slot->start_time,
+                'end_time' => $slot->end_time,
+                'duration_minutes' => $slot->duration_minutes,
+                'meeting_type' => $slot->meeting_type,
+                'cost' => $slot->cost,
+            ]);
+
+        return $this->ok('Availability retrieved successfully.', [
+            'date' => $requestedDate->toDateString(),
+            'slots' => $availableSlots,
         ]);
     }
 

@@ -10,8 +10,11 @@ import Register from './Pages/Auth/Register';
 import TutorDashboard from './Pages/Dashboard/TutorDashboard';
 import StudentDashboard from './Pages/Dashboard/StudentDashboard';
 import AdminDashboard from './Pages/Dashboard/AdminDashboard';
+import CouponManagement from './Pages/Admin/CouponManagement';
 import FindTutors from './Pages/Student/FindTutors';
-import TutorPublicProfile from './Pages/Student/TutorPublicProfile';
+import TutorProfile from './Pages/Student/TutorProfile';
+import Checkout from './Pages/Student/Checkout';
+import DashboardLayout from './Layouts/DashboardLayout';
 
 function Home() {
     return (
@@ -41,7 +44,14 @@ function LegacyDashboardRedirect() {
     return <div>Dashboard not found for this role.</div>;
 }
 
-import DashboardLayout from './Layouts/DashboardLayout';
+function ProtectedLayoutRoute() {
+    const { user, loading } = useAuth();
+
+    if (loading) return null;
+    if (!user) return <Navigate to="/login" replace />;
+
+    return <DashboardLayout />;
+}
 
 function App() {
     return (
@@ -51,13 +61,15 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
-                <Route element={<DashboardLayout />}>
+                <Route element={<ProtectedLayoutRoute />}>
                     <Route path="/dashboard" element={<LegacyDashboardRedirect />} />
                     <Route path="/tutor/dashboard" element={<TutorDashboard />} />
                     <Route path="/student/dashboard" element={<StudentDashboard />} />
+                    <Route path="/student/checkout" element={<Checkout />} />
                     <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                    <Route path="/admin/coupons" element={<CouponManagement />} />
                     <Route path="/student/find-tutors" element={<FindTutors />} />
-                    <Route path="/tutors/:id" element={<TutorPublicProfile />} />
+                    <Route path="/tutors/:id" element={<TutorProfile />} />
                 </Route>
             </Routes>
         </BrowserRouter>

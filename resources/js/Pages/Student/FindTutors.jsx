@@ -6,11 +6,10 @@ import { Navigate, Link, useSearchParams } from 'react-router-dom';
 export default function FindTutors() {
     const { user, logout } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
+    const searchQuery = searchParams.get('search') || '';
     const [tutors, setTutors] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [selectedSubject, setSelectedSubject] = useState('');
-    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-    const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
     const [isLoading, setIsLoading] = useState(true);
 
     // Basic role protection
@@ -30,25 +29,14 @@ export default function FindTutors() {
     }, []);
 
     useEffect(() => {
-        const timerId = setTimeout(() => {
-            setDebouncedSearch(searchQuery);
-        }, 400);
-        return () => clearTimeout(timerId);
-    }, [searchQuery]);
-
-    useEffect(() => {
         const fetchTutors = async () => {
             setIsLoading(true);
             try {
-                let url = '/api/v1/search/tutors';
-                const params = new URLSearchParams();
-                if (selectedSubject) params.append('subject_id', selectedSubject);
-                if (debouncedSearch) params.append('search', debouncedSearch);
-                
-                const queryString = params.toString();
-                if (queryString) url += `?${queryString}`;
-                    
-                const res = await axios.get(url);
+                const params = {};
+                if (selectedSubject) params.subject_id = selectedSubject;
+                if (!selectedSubject && searchQuery) params.search = searchQuery;
+
+                const res = await axios.get('/api/v1/search/tutors', { params });
                 setTutors(res.data.data.tutors);
             } catch (error) {
                 console.error('Failed to fetch tutors:', error);
@@ -58,12 +46,7 @@ export default function FindTutors() {
         };
 
         fetchTutors();
-        
-        const newParams = new URLSearchParams();
-        if (debouncedSearch) newParams.set('search', debouncedSearch);
-        setSearchParams(newParams, { replace: true });
-
-    }, [selectedSubject, debouncedSearch, setSearchParams]);
+    }, [selectedSubject, searchQuery]);
 
     return (
         <>
@@ -89,7 +72,15 @@ export default function FindTutors() {
                                 className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
                                 placeholder="Search tutors or subjects..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    const newParams = new URLSearchParams(searchParams);
+                                    if (e.target.value) {
+                                        newParams.set('search', e.target.value);
+                                    } else {
+                                        newParams.delete('search');
+                                    }
+                                    setSearchParams(newParams, { replace: true });
+                                }}
                             />
                         </div>
                         <select

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Login() {
-    const navigate = useNavigate();
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -15,22 +14,27 @@ export default function Login() {
         setError('');
         setIsLoading(true);
 
-        const result = await login(email, password);
+        try {
+            const result = await login(email, password);
 
-        if (result.success) {
-            const role = result.user?.role;
-            if (role === 'tutor') {
-                navigate('/tutor/dashboard');
-            } else if (role === 'student') {
-                navigate('/student/dashboard');
+            if (result.success) {
+                const role = result.user?.role;
+                const redirectPath =
+                    role === 'student'
+                        ? '/student/dashboard'
+                        : role === 'tutor'
+                          ? '/tutor/dashboard'
+                          : role === 'admin'
+                            ? '/admin/dashboard'
+                            : '/student/dashboard';
+
+                window.location.href = redirectPath;
             } else {
-                navigate('/admin/dashboard'); 
+                setError(result.message);
             }
-        } else {
-            setError(result.message);
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     return (

@@ -76,6 +76,11 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class, 'tutor_id');
     }
 
+        public function availabilities(): HasMany
+    {
+        return $this->hasMany(TutorAvailability::class, 'tutor_id');
+    }
+
         public function appNotifications(): HasMany
     {
         return $this->hasMany(Notification::class);

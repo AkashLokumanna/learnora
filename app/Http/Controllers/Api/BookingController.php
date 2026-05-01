@@ -281,7 +281,7 @@ class BookingController extends ApiController
             return ['valid' => false, 'message' => 'You have already used this coupon.', 'coupon' => null, 'discount' => 0];
         }
 
-        $discount = $coupon->type === 'percent'
+        $discount = in_array($coupon->type, ['percent', 'percentage'], true)
             ? round(($bookingAmount * $coupon->value) / 100, 2)
             : min((float) $coupon->value, $bookingAmount); 
 
