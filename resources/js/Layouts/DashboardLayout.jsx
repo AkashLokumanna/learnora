@@ -23,11 +23,19 @@ export default function DashboardLayout() {
                                 </Link>
                             )}
                             {user?.role === 'student' && (
-                                <Link 
-                                    to="/student/find-tutors" 
+                                <Link
+                                    to="/student/find-tutors"
                                     className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium"
                                 >
                                     Find a Tutor
+                                </Link>
+                            )}
+                            {user?.role === 'admin' && (
+                                <Link
+                                    to="/admin/coupons"
+                                    className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                                >
+                                    Coupons
                                 </Link>
                             )}
                         </div>

@@ -42,10 +42,15 @@ class PaymentController extends ApiController
             return $this->unprocessable('This booking has already been paid for.');
         }
 
+        $netAmountFloat = max((float) $booking->amount - (float) $booking->discount_amount, 0);
         $netAmount = number_format(
-            (float) $booking->amount - (float) $booking->discount_amount,
+            $netAmountFloat,
             2, '.', ''          // e.g. "2500.00" — PayHere requires 2dp, no thousands separator
         );
+
+        if ($netAmountFloat <= 0) {
+            return $this->settleZeroTotal($request, $booking, $netAmount);
+        }
 
         $merchantId     = config('services.payhere.merchant_id');
         $merchantSecret = config('services.payhere.merchant_secret');
@@ -112,6 +117,63 @@ class PaymentController extends ApiController
                 'country'     => 'Sri Lanka',
                 'hash'        => $hash,
             ],
+        ]);
+    }
+
+        private function settleZeroTotal(Request $request, Booking $booking, string $netAmount): JsonResponse
+    {
+        $orderId = 'LRN-FREE-' . $booking->id;
+
+        $payment = DB::transaction(function () use ($request, $booking, $netAmount, $orderId) {
+            $payment = Payment::updateOrCreate(
+                ['booking_id' => $booking->id],
+                [
+                    'user_id'                => $request->user()->id,
+                    'amount'                 => $netAmount,
+                    'currency'               => 'LKR',
+                    'gateway'                => 'simulated',
+                    'gateway_order_id'       => $orderId,
+                    'gateway_transaction_id' => $orderId,
+                    'gateway_status'         => 'zero_total_auto_settled',
+                    'gateway_response'       => ['note' => 'Booking total was zero after discount; payment auto-settled.'],
+                    'status'                 => Payment::STATUS_SUCCESS,
+                    'paid_at'                => Carbon::now(),
+                ]
+            );
+
+            $booking->update([
+                'status'         => Booking::STATUS_CONFIRMED,
+                'payment_status' => Booking::PAYMENT_PAID,
+            ]);
+
+            if ($booking->coupon_id) {
+                CouponUsage::firstOrCreate(
+                    ['coupon_id' => $booking->coupon_id, 'user_id' => $payment->user_id],
+                    ['booking_id' => $booking->id]
+                );
+
+                Coupon::where('id', $booking->coupon_id)->increment('used_count');
+            }
+
+            return $payment;
+        });
+
+        if ($booking->student) {
+            $booking->student->notify(new PaymentReceiptNotification($booking->fresh()));
+        }
+
+        Log::info('[Payment] Zero-total booking auto-settled', [
+            'booking_id' => $booking->id,
+            'payment_id' => $payment->id,
+        ]);
+
+        return $this->ok('Booking settled — no payment required.', [
+            'payment_id'  => $payment->id,
+            'order_id'    => $orderId,
+            'net_amount'  => $netAmount,
+            'currency'    => 'LKR',
+            'auto_paid'   => true,
+            'booking_id'  => $booking->id,
         ]);
     }
 

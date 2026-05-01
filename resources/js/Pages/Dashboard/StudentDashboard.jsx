@@ -10,6 +10,7 @@ export default function StudentDashboard() {
     const [bookings, setBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [reviewBooking, setReviewBooking] = useState(null);
+    const [contactTutor, setContactTutor] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     const fetchBookings = async () => {
@@ -110,6 +111,14 @@ export default function StudentDashboard() {
                                                         Go to Checkout
                                                     </button>
                                                 )}
+                                                {booking.status === 'confirmed' && booking.payment_status === 'paid' && (
+                                                    <button
+                                                        onClick={() => setContactTutor(booking.tutor)}
+                                                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        Contact Tutor
+                                                    </button>
+                                                )}
                                                 {booking.payment_status === 'paid' && booking.status !== 'cancelled' && (
                                                     <button
                                                         onClick={() => setReviewBooking(booking)}
@@ -165,14 +174,91 @@ export default function StudentDashboard() {
             </main>
 
             {reviewBooking && (
-                <ReviewModal 
-                    booking={reviewBooking} 
-                    onClose={() => setReviewBooking(null)} 
+                <ReviewModal
+                    booking={reviewBooking}
+                    onClose={() => setReviewBooking(null)}
                     onSuccess={() => {
                         alert("Thank you! Your review has been submitted.");
                         fetchBookings();
                     }}
                 />
+            )}
+
+            {contactTutor && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    onClick={() => setContactTutor(null)}
+                >
+                    <div
+                        className="w-full max-w-md rounded-lg bg-white shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Contact Tutor</h3>
+                            <button
+                                type="button"
+                                onClick={() => setContactTutor(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="px-6 py-5">
+                            <div className="flex items-center">
+                                <div className="h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+                                    {contactTutor.name?.charAt(0)}
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-base font-semibold text-gray-900">{contactTutor.name}</p>
+                                    <p className="text-sm text-gray-500">Tutor</p>
+                                </div>
+                            </div>
+
+                            <dl className="mt-5 space-y-3 text-sm">
+                                <div>
+                                    <dt className="font-medium text-gray-500">Email</dt>
+                                    <dd className="mt-1 text-gray-900">
+                                        {contactTutor.email ? (
+                                            <a
+                                                href={`mailto:${contactTutor.email}`}
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                {contactTutor.email}
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400">Not provided</span>
+                                        )}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="font-medium text-gray-500">Phone</dt>
+                                    <dd className="mt-1 text-gray-900">
+                                        {contactTutor.phone ? (
+                                            <a
+                                                href={`tel:${contactTutor.phone}`}
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                {contactTutor.phone}
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400">Not provided</span>
+                                        )}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <div className="flex justify-end border-t border-gray-100 px-6 py-3">
+                            <button
+                                type="button"
+                                onClick={() => setContactTutor(null)}
+                                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </>
     );

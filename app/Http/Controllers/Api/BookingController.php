@@ -18,7 +18,7 @@ class BookingController extends ApiController
     {
         $user  = $request->user();
         $query = Booking::query()
-            ->with(['student:id,name,avatar', 'tutor:id,name,avatar', 'subject:id,name,slug,icon,color'])
+            ->with(['student:id,name,avatar', 'tutor:id,name,avatar,email,phone', 'subject:id,name,slug,icon,color'])
             ->orderByDesc('session_date')
             ->orderByDesc('time_from');
 
@@ -314,7 +314,13 @@ class BookingController extends ApiController
         }
 
         if ($booking->relationLoaded('tutor') && $booking->tutor) {
-            $data['tutor'] = ['id' => $booking->tutor->id, 'name' => $booking->tutor->name, 'avatar' => $booking->tutor->avatar];
+            $data['tutor'] = [
+                'id'     => $booking->tutor->id,
+                'name'   => $booking->tutor->name,
+                'avatar' => $booking->tutor->avatar,
+                'email'  => $booking->tutor->email,
+                'phone'  => $booking->tutor->phone,
+            ];
         }
 
         if ($booking->relationLoaded('subject') && $booking->subject) {
