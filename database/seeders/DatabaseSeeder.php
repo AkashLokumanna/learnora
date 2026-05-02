@@ -17,11 +17,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $password = Hash::make('password123'); // Universal password for all seeded accounts
+        $password = Hash::make('password123');
 
-        // =====================================================================
-        // 1. Hardcoded Test Accounts (Guaranteed Authentication)
-        // =====================================================================
+        // Hardcoded test accounts
         $testPassword = Hash::make('password');
 
         User::create([
@@ -56,9 +54,7 @@ class DatabaseSeeder extends Seeder
             'languages'           => json_encode(['English']),
         ]);
 
-        // =====================================================================
-        // 2. Core Subjects
-        // =====================================================================
+        // Core subjects
         $subjectsData = [
             ['name' => 'Mathematics', 'slug' => 'mathematics', 'icon' => 'calculator', 'color' => '#3B82F6'],
             ['name' => 'Physics', 'slug' => 'physics', 'icon' => 'atom', 'color' => '#8B5CF6'],
@@ -70,9 +66,7 @@ class DatabaseSeeder extends Seeder
             $subjects[$data['slug']] = Subject::create($data);
         }
 
-        // =====================================================================
-        // 3. Tutors
-        // =====================================================================
+        // Tutors
         $tutorsData = [
             [
                 'name'     => 'Dr. Alan Turing',
@@ -159,9 +153,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // =====================================================================
-        // 4. Students
-        // =====================================================================
+        // Students
         $studentNames = [
             'Alice Johnson', 'Bob Smith', 'Charlie Brown', 'Diana Prince', 'Ethan Hunt'
         ];

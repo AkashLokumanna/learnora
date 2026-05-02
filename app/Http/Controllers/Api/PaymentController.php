@@ -42,11 +42,9 @@ class PaymentController extends ApiController
             return $this->unprocessable('This booking has already been paid for.');
         }
 
+        // PayHere requires the amount as a fixed two-decimal string with no thousands separator.
         $netAmountFloat = max((float) $booking->amount - (float) $booking->discount_amount, 0);
-        $netAmount = number_format(
-            $netAmountFloat,
-            2, '.', ''          // e.g. "2500.00" — PayHere requires 2dp, no thousands separator
-        );
+        $netAmount = number_format($netAmountFloat, 2, '.', '');
 
         if ($netAmountFloat <= 0) {
             return $this->settleZeroTotal($request, $booking, $netAmount);
@@ -189,7 +187,6 @@ class PaymentController extends ApiController
         $statusCode      = (int) $request->input('status_code');
         $md5sig          = strtoupper($request->input('md5sig', ''));
 
-        // -- 1. Verify MD5 signature ----------------------------------------
         $merchantSecret = config('services.payhere.merchant_secret');
 
         $expectedSig = strtoupper(
