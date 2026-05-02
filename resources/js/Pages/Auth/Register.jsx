@@ -51,8 +51,6 @@ export default function Register() {
                         Select your account type to get started
                     </p>
                 </div>
-
-                {}
                 <div className="flex rounded-md shadow-sm" role="group">
                     <button
                         type="button"

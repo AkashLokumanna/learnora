@@ -16,6 +16,12 @@ export const AuthProvider = ({ children }) => {
         return res.data?.data?.user ?? null;
     };
 
+    const refreshUser = async () => {
+        const authenticatedUser = await fetchAuthenticatedUser();
+        setUser(authenticatedUser);
+        return authenticatedUser;
+    };
+
     useEffect(() => {
         const bootstrapAuth = async () => {
             const token = localStorage.getItem('learnora_token');
@@ -121,6 +127,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        refreshUser,
     };
 
     return (

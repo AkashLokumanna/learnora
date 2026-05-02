@@ -74,7 +74,6 @@ export default function TutorPublicProfile() {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pb-12 w-full">
             <div className="bg-white rounded-lg shadow overflow-hidden">
-                {}
                 <div className="bg-blue-600 px-8 py-12 text-white">
                     <div className="flex items-center">
                         <div className="h-20 w-20 rounded-full bg-white text-blue-600 flex items-center justify-center text-3xl font-bold shadow-md">
@@ -163,7 +162,6 @@ export default function TutorPublicProfile() {
                                 </div>
                             </div>
 
-                            {}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Session Date</label>
                                 <input 
